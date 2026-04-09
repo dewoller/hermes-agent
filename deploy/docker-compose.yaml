@@ -9,7 +9,7 @@ services:
     volumes:
       - /tank/services/active_services/hermes-dee:/data
       - /run/secrets/hermes-dee/.env:/data/.env:ro
-      - /tank/services/active_services/hermes/deploy/config-dee.yaml:/data/config.yaml:ro
+      - /tank/services/active_services/hermes/deploy/config-dee.yaml:/opt/config-seed.yaml:ro
     environment:
       - HERMES_HOME=/data
     logging:
@@ -25,7 +25,7 @@ services:
     volumes:
       - /tank/services/active_services/hermes-tracy:/data
       - /run/secrets/hermes-tracy/.env:/data/.env:ro
-      - /tank/services/active_services/hermes/deploy/config-tracy.yaml:/data/config.yaml:ro
+      - /tank/services/active_services/hermes/deploy/config-tracy.yaml:/opt/config-seed.yaml:ro
     environment:
       - HERMES_HOME=/data
     logging:

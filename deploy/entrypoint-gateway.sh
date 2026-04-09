@@ -8,8 +8,12 @@ INSTALL_DIR="/opt/hermes"
 # Create essential directory structure
 mkdir -p "$HERMES_HOME"/{cron,sessions,logs,hooks,memories,skills,cache}
 
-# Bootstrap config.yaml if missing (but prefer bind-mounted one)
-if [ ! -f "$HERMES_HOME/config.yaml" ] && [ ! -L "$HERMES_HOME/config.yaml" ]; then
+# Seed config.yaml from mounted seed or default template.
+# Always overwrite from seed so git-tracked config stays authoritative,
+# but hermes can still write to it at runtime (e.g. /sethome).
+if [ -f /opt/config-seed.yaml ]; then
+    cp /opt/config-seed.yaml "$HERMES_HOME/config.yaml"
+elif [ ! -f "$HERMES_HOME/config.yaml" ]; then
     cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
     echo "Bootstrapped default config.yaml"
 fi
