@@ -15,10 +15,17 @@ memory:
   mode: "local"
 
 # MCP servers — connect to host services via Docker bridge gateway
+# Bearer token from JOT_TOKEN env var (shared auth.yaml across all MCP servers)
 mcp_servers:
   jot:
     url: "http://172.17.0.1:8768/mcp"
+    headers:
+      Authorization: "Bearer ${JOT_TOKEN}"
   kb:
     url: "http://172.17.0.1:8767/mcp"
+    headers:
+      Authorization: "Bearer ${JOT_TOKEN}"
   ms365:
-    url: "http://172.17.0.1:8765/sse"
+    url: "http://172.17.0.1:8765/mcp"
+    headers:
+      Authorization: "Bearer ${JOT_TOKEN}"
