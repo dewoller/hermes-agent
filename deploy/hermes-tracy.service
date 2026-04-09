@@ -1,0 +1,27 @@
+[Unit]
+Description=Hermes Agent - Tracy
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=dewoller
+Group=dewoller
+WorkingDirectory=/tank/services/active_services/hermes
+Environment=PATH=/home/dewoller/.local/bin:/home/dewoller/.volta/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HOME=/home/dewoller
+Environment=HERMES_HOME=/tank/services/active_services/hermes-tracy
+
+ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-tracy
+ExecStartPre=/bin/ln -sf /run/secrets/hermes-tracy/.env /tank/services/active_services/hermes-tracy/.env
+ExecStart=/tank/services/active_services/hermes/.venv/bin/hermes gateway
+ExecStopPost=+/bin/rm -rf /run/secrets/hermes-tracy
+
+Restart=always
+RestartSec=10
+StandardOutput=append:/tank/services/active_services/hermes-tracy/logs/hermes.log
+StandardError=append:/tank/services/active_services/hermes-tracy/logs/hermes.error.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,27 @@
+# Hermes Agent - Tracy's Configuration
+# Secrets (API keys, tokens) live in .env via SOPS, not here.
+
+model:
+  default: "gpt-5.4"
+  provider: "openai-codex"
+
+terminal:
+  backend: "docker"
+  cwd: "/workspace"
+  timeout: 180
+  lifetime_seconds: 300
+  docker_image: "nikolaik/python-nodejs:python3.12-nodejs22"
+  docker_mount_cwd_to_workspace: false
+  container_cpu: 1
+  container_memory: 5120
+  container_disk: 51200
+  container_persistent: true
+
+memory:
+  mode: "local"
+
+# MCP servers - shared tooling
+# mcp_servers:
+#   filesystem:
+#     command: "npx"
+#     args: ["@modelcontextprotocol/server-filesystem", "/tmp"]

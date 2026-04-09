@@ -1,0 +1,24 @@
+# Hermes Agent - Tracy's Secrets
+# This is a TEMPLATE. The real .env is SOPS-encrypted as .env.sops
+# in /tank/services/active_services/hermes-tracy/
+
+# OpenAI Codex OAuth tokens are stored in auth.json (via hermes login),
+# NOT in .env. These are just fallback/supplementary keys.
+
+# Telegram
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ALLOWED_USERS=
+TELEGRAM_HOME_CHANNEL=
+
+# WhatsApp
+WHATSAPP_ENABLED=true
+WHATSAPP_ALLOWED_USERS=
+
+# Optional: fallback API keys (if Codex OAuth is down)
+# OPENROUTER_API_KEY=
+# ANTHROPIC_API_KEY=
+
+# Optional: tool API keys
+# EXA_API_KEY=
+# FIRECRAWL_API_KEY=
+# GITHUB_TOKEN=
