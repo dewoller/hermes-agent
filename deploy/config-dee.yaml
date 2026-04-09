@@ -14,13 +14,11 @@ terminal:
 memory:
   mode: "local"
 
-# MCP servers - shared tooling
-# mcp_servers:
-#   filesystem:
-#     command: "npx"
-#     args: ["@modelcontextprotocol/server-filesystem", "/tmp"]
-#   jot:
-#     command: "npx"
-#     args: ["@anthropic-ai/jot-mcp"]
-#     env:
-#       JOT_TOKEN: "${JOT_TOKEN}"
+# MCP servers — connect to host services via Docker bridge gateway
+mcp_servers:
+  jot:
+    url: "http://172.17.0.1:8768/mcp"
+  kb:
+    url: "http://172.17.0.1:8767/mcp"
+  ms365:
+    url: "http://172.17.0.1:8765/sse"
