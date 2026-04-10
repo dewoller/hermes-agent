@@ -111,6 +111,19 @@ def test_rank_candidates_prefers_longer_reason_when_confidence_ties():
     assert ranked[0]["title"] == "Bar B"
 
 
+@pytest.mark.parametrize(
+    "invalid_confidence",
+    [True, "0.95", math.nan],
+)
+def test_rank_candidates_sanitizes_invalid_dict_confidence(invalid_confidence):
+    ranked = rank_candidates([
+        {"title": "Valid bar", "confidence": 0.9, "reason_text": "matched wrapper text"},
+        {"title": "Invalid bar", "confidence": invalid_confidence, "reason_text": "matched wrapper text"},
+    ])
+
+    assert ranked[0]["title"] == "Valid bar"
+
+
 def test_rank_candidates_orders_candidate_models():
     ranked = rank_candidates([
         CandidateModel(
