@@ -1,4 +1,8 @@
 import click
+import uvicorn
+
+from nutrition_service.api import create_app
+from nutrition_service.settings import NutritionSettings
 
 
 @click.group()
@@ -31,4 +35,5 @@ def import_usda_command(json_path: str) -> None:
 
 @cli.command("serve")
 def serve_command() -> None:
-    click.echo("serve")
+    settings = NutritionSettings()
+    uvicorn.run(create_app(), host=settings.bind_host, port=settings.bind_port)
