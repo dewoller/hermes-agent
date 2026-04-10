@@ -83,6 +83,8 @@ class LabelObservation(Base):
     __tablename__ = "label_observation"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     image_asset_id: Mapped[int] = mapped_column(ForeignKey("image_asset.id"))
+    parsed_product_name: Mapped[str | None] = mapped_column(Text)
+    parsed_brand_name: Mapped[str | None] = mapped_column(Text)
     parsed_barcode: Mapped[str | None] = mapped_column(String(64), index=True)
     parsed_nutrients_json: Mapped[dict | None] = mapped_column(JSON)
     confidence: Mapped[float] = mapped_column(Float)

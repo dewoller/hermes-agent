@@ -151,14 +151,20 @@ def test_build_source_candidates_prefers_caption_match_and_limits_to_three():
     candidates = build_source_candidates(
         caption_text="chicken salad lunch",
         off_rows=[
-            {"id": 1, "product_name": "Protein Bar", "brand_name": "Test Brand", "energy_kcal": 210.0},
+            {
+                "id": 1,
+                "barcode": "930000000001",
+                "product_name": "Protein Bar",
+                "brand_name": "Test Brand",
+                "energy_kcal": 210.0,
+            },
         ],
         fsanz_rows=[
             {"id": 2, "food_name": "Boiled egg", "energy_kcal": 155.0},
         ],
         usda_rows=[
-            {"id": 3, "description": "Chicken salad", "energy_kcal": 205.0},
-            {"id": 4, "description": "Chicken wrap", "energy_kcal": 230.0},
+            {"id": 3, "gtin_upc": None, "description": "Chicken salad", "energy_kcal": 205.0},
+            {"id": 4, "gtin_upc": None, "description": "Chicken wrap", "energy_kcal": 230.0},
         ],
     )
 
@@ -169,3 +175,59 @@ def test_build_source_candidates_prefers_caption_match_and_limits_to_three():
     ]
     assert candidates[0]["reason_text"] == "matched caption text against USDA source data"
     assert candidates[0]["candidate_id"] == "usda:3"
+
+
+def test_build_source_candidates_prefers_label_observation_match_for_packaged_foods():
+    candidates = build_source_candidates(
+        caption_text="lunch",
+        label_observation={
+            "parsed_barcode": "930000000001",
+            "parsed_product_name": "Protein Bar",
+            "parsed_brand_name": "Test Brand",
+            "parsed_nutrients_json": {"energy_kcal": 230.0},
+            "confidence": 0.94,
+        },
+        off_rows=[
+            {
+                "id": 1,
+                "barcode": "930000000001",
+                "product_name": "Protein Bar",
+                "brand_name": "Test Brand",
+                "energy_kcal": 210.0,
+            },
+        ],
+        fsanz_rows=[
+            {"id": 2, "food_name": "Boiled egg", "energy_kcal": 155.0},
+        ],
+        usda_rows=[
+            {"id": 3, "gtin_upc": None, "description": "Chicken salad", "energy_kcal": 205.0},
+        ],
+    )
+
+    assert candidates[0]["title"] == "Test Brand Protein Bar"
+    assert candidates[0]["calories"] == 230.0
+    assert candidates[0]["reason_text"] == "matched label observation barcode against OFF source data"
+
+
+def test_build_source_candidates_does_not_force_text_match_when_brand_disagrees():
+    candidates = build_source_candidates(
+        caption_text="snack",
+        label_observation={
+            "parsed_product_name": "Protein Bar",
+            "parsed_brand_name": "Brand A",
+            "confidence": 0.94,
+        },
+        off_rows=[
+            {
+                "id": 1,
+                "barcode": "930000000001",
+                "product_name": "Protein Bar",
+                "brand_name": "Brand B",
+                "energy_kcal": 210.0,
+            },
+        ],
+        fsanz_rows=[],
+        usda_rows=[],
+    )
+
+    assert candidates[0]["reason_text"] == "fallback OFF source candidate"

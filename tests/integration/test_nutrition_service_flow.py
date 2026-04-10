@@ -6,7 +6,8 @@ from fastapi.testclient import TestClient
 
 from nutrition_service.api import create_app
 from nutrition_service.db import create_schema
-from nutrition_service.models import AnalysisRequest, ImageAsset, MealCandidate, MealLog, SourceFoodFsanz, SourceFoodUsda, SourceProductOff
+from nutrition_service.models import AnalysisRequest, ImageAsset, LabelObservation, MealCandidate, MealLog, SourceFoodFsanz, SourceFoodUsda, SourceProductOff
+from nutrition_service.service import NutritionService
 
 
 def test_analyze_then_select_persists_request_candidates_and_meal_log(tmp_path):
@@ -75,3 +76,93 @@ def test_analyze_then_select_persists_request_candidates_and_meal_log(tmp_path):
         assert meal_log is not None
         assert meal_log.title == "Chicken salad"
         assert meal_log.calories == 205.0
+
+
+def test_analyze_persists_label_observation_and_prefers_packaged_match(tmp_path):
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'nutrition.sqlite3'}"
+    engine = create_engine(database_url)
+    create_schema(engine)
+    with Session(engine) as session:
+        session.add_all(
+            [
+                SourceProductOff(
+                    barcode="930000000001",
+                    product_name="Protein Bar",
+                    brand_name="Test Brand",
+                    energy_kcal=210.0,
+                    raw_payload={},
+                ),
+                SourceFoodFsanz(food_name="Boiled egg", energy_kcal=155.0, raw_payload={}),
+            ]
+        )
+        session.commit()
+
+    async def analyze_image(_image_path: str) -> dict:
+        return {
+            "parsed_barcode": "930000000001",
+            "parsed_product_name": "Protein Bar",
+            "parsed_brand_name": "Test Brand",
+            "parsed_nutrients_json": {"energy_kcal": 230.0},
+            "confidence": 0.94,
+        }
+
+    service = NutritionService(
+        session_factory=lambda: Session(engine),
+        image_analyzer=analyze_image,
+    )
+    client = TestClient(create_app(service=service))
+
+    analyze = client.post(
+        "/api/nutrition/v1/analyze",
+        json={
+            "session_id": "telegram:dm:1",
+            "caption_text": "lunch",
+            "image_paths": ["/tmp/wrapper.jpg"],
+        },
+    )
+
+    assert analyze.status_code == 200
+    payload = analyze.json()
+    assert payload["candidates"][0]["title"] == "Test Brand Protein Bar"
+    assert payload["candidates"][0]["calories"] == 230.0
+
+    with Session(engine) as session:
+        observation = session.scalar(select(LabelObservation))
+        assert observation is not None
+        assert observation.parsed_barcode == "930000000001"
+        assert observation.parsed_nutrients_json == {"energy_kcal": 230.0}
+        assert observation.status == "pending"
+
+
+def test_analyze_falls_back_to_caption_ranking_when_image_analyzer_fails(tmp_path):
+    database_url = f"sqlite+pysqlite:///{tmp_path / 'nutrition.sqlite3'}"
+    engine = create_engine(database_url)
+    create_schema(engine)
+    with Session(engine) as session:
+        session.add(SourceFoodUsda(description="Chicken salad", energy_kcal=205.0, raw_payload={}))
+        session.commit()
+
+    async def analyze_image(_image_path: str) -> dict:
+        raise RuntimeError("vision backend exploded")
+
+    service = NutritionService(
+        session_factory=lambda: Session(engine),
+        image_analyzer=analyze_image,
+    )
+    client = TestClient(create_app(service=service))
+
+    analyze = client.post(
+        "/api/nutrition/v1/analyze",
+        json={
+            "session_id": "telegram:dm:1",
+            "caption_text": "chicken salad lunch",
+            "image_paths": ["/tmp/wrapper.jpg"],
+        },
+    )
+
+    assert analyze.status_code == 200
+    payload = analyze.json()
+    assert payload["candidates"][0]["title"] == "Chicken salad"
+
+    with Session(engine) as session:
+        assert session.scalar(select(LabelObservation)) is None
