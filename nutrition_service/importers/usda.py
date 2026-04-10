@@ -39,13 +39,13 @@ def normalize_usda_food(food: dict) -> UsdaImportFood:
         name = nutrient.get("nutrientName")
         unit = nutrient.get("unitName")
         value = nutrient.get("value")
-        if name == "Energy" and unit == "KCAL":
+        if name == "Energy" and unit == "KCAL" and energy_kcal is None:
             energy_kcal = _pick_number(value)
-        elif name == "Protein":
+        elif name == "Protein" and protein_g is None:
             protein_g = _pick_number(value)
-        elif name in {"Carbohydrate, by difference", "Carbohydrate"}:
+        elif name in {"Carbohydrate, by difference", "Carbohydrate"} and carbs_g is None:
             carbs_g = _pick_number(value)
-        elif name == "Total lipid (fat)":
+        elif name == "Total lipid (fat)" and fat_g is None:
             fat_g = _pick_number(value)
 
     return UsdaImportFood(
@@ -60,4 +60,3 @@ def normalize_usda_food(food: dict) -> UsdaImportFood:
         fat_g=fat_g,
         raw_payload=food,
     )
-

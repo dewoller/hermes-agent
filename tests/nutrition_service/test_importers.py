@@ -1,3 +1,6 @@
+from click.testing import CliRunner
+
+from nutrition_service.cli import cli
 from nutrition_service.importers.fsanz import normalize_fsanz_row
 from nutrition_service.importers.off import normalize_off_record
 from nutrition_service.importers.usda import normalize_usda_food
@@ -51,3 +54,56 @@ def test_normalize_usda_food_extracts_serving_and_gtin():
     assert normalized.gtin_upc == "008181234567"
     assert normalized.serving_size == 50
     assert normalized.energy_kcal == 205
+
+
+def test_normalize_usda_food_preserves_first_valid_duplicate_nutrient_value():
+    food = {
+        "fdcId": 321,
+        "description": "Duplicate Nutrient Bar",
+        "gtinUpc": "000000000321",
+        "servingSize": 60,
+        "servingSizeUnit": "g",
+        "foodNutrients": [
+            {"nutrientName": "Energy", "unitName": "KCAL", "value": 205},
+            {"nutrientName": "Energy", "unitName": "KCAL", "value": ""},
+            {"nutrientName": "Protein", "unitName": "G", "value": 18.5},
+            {"nutrientName": "Protein", "unitName": "G", "value": None},
+            {"nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 23},
+            {"nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": "nope"},
+            {"nutrientName": "Total lipid (fat)", "unitName": "G", "value": 9},
+            {"nutrientName": "Total lipid (fat)", "unitName": "G", "value": "bad"},
+        ],
+    }
+
+    normalized = normalize_usda_food(food)
+
+    assert normalized.energy_kcal == 205
+    assert normalized.protein_g == 18.5
+    assert normalized.carbs_g == 23
+    assert normalized.fat_g == 9
+
+
+def test_import_commands_accept_existing_files_and_reject_missing_files(tmp_path):
+    runner = CliRunner()
+    existing_paths = {
+        "import-off": tmp_path / "off.json",
+        "import-fsanz": tmp_path / "fsanz.csv",
+        "import-usda": tmp_path / "usda.json",
+    }
+
+    for path in existing_paths.values():
+        path.write_text("[]", encoding="utf-8")
+
+    for command, path in existing_paths.items():
+        result = runner.invoke(cli, [command, str(path)])
+
+        assert result.exit_code == 0
+        assert f"{command} {path}" in result.output
+
+    missing_path = tmp_path / "missing.json"
+
+    for command in existing_paths:
+        result = runner.invoke(cli, [command, str(missing_path)])
+
+        assert result.exit_code != 0
+        assert "does not exist" in result.output
