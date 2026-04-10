@@ -120,6 +120,24 @@ def test_analyze_meal_posts_json_and_returns_response():
     }
 
 
+def test_analyze_meal_uses_injected_client_base_url_when_base_url_is_default():
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        return httpx.Response(200, json={"candidate_set_id": "set-1"})
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.Client(base_url="http://nutrition.test", transport=transport)
+    service_client = NutritionServiceClient(client=client)
+
+    response = service_client.analyze_meal({"session_id": "telegram:dm:1"})
+
+    assert response == {"candidate_set_id": "set-1"}
+    assert len(requests_seen) == 1
+    assert str(requests_seen[0].url) == "http://nutrition.test/api/nutrition/v1/analyze"
+
+
 def test_serve_command_runs_uvicorn_with_settings(monkeypatch):
     app = object()
     captured = {}
