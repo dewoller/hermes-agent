@@ -1,3 +1,4 @@
+from urllib.parse import urljoin
 from typing import Any
 
 import httpx
@@ -11,9 +12,10 @@ class NutritionServiceClient:
     ) -> None:
         self._client = client or httpx.Client(base_url=base_url)
         self._owns_client = client is None
+        self._analyze_url = urljoin(base_url.rstrip("/") + "/", "api/nutrition/v1/analyze")
 
     def analyze_meal(self, payload: dict[str, Any]) -> Any:
-        response = self._client.post("/api/nutrition/v1/analyze", json=payload)
+        response = self._client.post(self._analyze_url, json=payload)
         response.raise_for_status()
         return response.json()
 

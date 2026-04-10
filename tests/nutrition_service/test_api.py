@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import httpx
@@ -19,18 +20,44 @@ def test_health_endpoint_reports_ok():
 
 def test_analyze_endpoint_returns_candidate_set():
     app = create_app()
-    app.state.resolve_analysis = lambda payload: {
-        "candidate_set_id": "set-1",
-        "candidates": [
-            {
-                "candidate_id": "cand-1",
-                "title": "Protein bar",
-                "calories": 230,
-                "confidence": 0.91,
-                "reason_text": "matched wrapper text",
-            }
-        ],
-    }
+    received_payloads = []
+
+    def resolve_analysis(payload):
+        received_payloads.append(payload)
+        return {
+            "candidate_set_id": "set-1",
+            "candidates": [
+                {
+                    "candidate_id": "cand-1",
+                    "title": "Protein bar",
+                    "calories": 230,
+                    "confidence": 0.91,
+                    "reason_text": "matched wrapper text",
+                }
+            ],
+        }
+
+    app.state.resolve_analysis = resolve_analysis
+    payload = {"session_id": "telegram:dm:1", "caption_text": "lunch", "image_paths": ["/tmp/photo.jpg"]}
+    client = TestClient(app)
+
+    response = client.post("/api/nutrition/v1/analyze", json=payload)
+
+    assert response.status_code == 200
+    assert response.json()["candidate_set_id"] == "set-1"
+    assert received_payloads == [payload]
+
+
+def test_analyze_endpoint_awaits_async_resolver():
+    app = create_app()
+
+    async def resolve_analysis(payload):
+        return {
+            "candidate_set_id": "set-async",
+            "payload": payload,
+        }
+
+    app.state.resolve_analysis = resolve_analysis
     client = TestClient(app)
 
     response = client.post(
@@ -39,8 +66,10 @@ def test_analyze_endpoint_returns_candidate_set():
     )
 
     assert response.status_code == 200
-    assert response.json()["candidate_set_id"] == "set-1"
-
+    assert response.json() == {
+        "candidate_set_id": "set-async",
+        "payload": {"session_id": "telegram:dm:1", "caption_text": "lunch", "image_paths": ["/tmp/photo.jpg"]},
+    }
 
 def test_select_endpoint_logs_selection():
     client = TestClient(create_app())
@@ -68,8 +97,8 @@ def test_analyze_meal_posts_json_and_returns_response():
         return httpx.Response(200, json={"candidate_set_id": "set-1"})
 
     transport = httpx.MockTransport(handler)
-    client = httpx.Client(base_url="http://nutrition.test", transport=transport)
-    service_client = NutritionServiceClient(client=client)
+    client = httpx.Client(base_url="http://ignored.test", transport=transport)
+    service_client = NutritionServiceClient(base_url="http://nutrition.test", client=client)
 
     response = service_client.analyze_meal(
         {
@@ -82,8 +111,13 @@ def test_analyze_meal_posts_json_and_returns_response():
     assert response == {"candidate_set_id": "set-1"}
     assert len(requests_seen) == 1
     assert requests_seen[0].method == "POST"
-    assert requests_seen[0].url.path == "/api/nutrition/v1/analyze"
+    assert str(requests_seen[0].url) == "http://nutrition.test/api/nutrition/v1/analyze"
     assert requests_seen[0].headers["content-type"].startswith("application/json")
+    assert json.loads(requests_seen[0].content) == {
+        "session_id": "telegram:dm:1",
+        "caption_text": "lunch",
+        "image_paths": ["/tmp/photo.jpg"],
+    }
 
 
 def test_serve_command_runs_uvicorn_with_settings(monkeypatch):

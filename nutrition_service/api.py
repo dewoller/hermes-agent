@@ -1,3 +1,4 @@
+import inspect
 from typing import Any
 
 from fastapi import FastAPI
@@ -16,8 +17,11 @@ def create_app() -> FastAPI:
         return {"ok": True}
 
     @app.post("/api/nutrition/v1/analyze")
-    def analyze(payload: dict[str, Any]) -> Any:
-        return app.state.resolve_analysis(payload)
+    async def analyze(payload: dict[str, Any]) -> Any:
+        result = app.state.resolve_analysis(payload)
+        if inspect.isawaitable(result):
+            result = await result
+        return result
 
     @app.post("/api/nutrition/v1/select")
     def select(payload: dict[str, Any]) -> dict[str, bool]:
