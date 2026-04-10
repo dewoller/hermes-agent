@@ -666,48 +666,41 @@ class TestExecuteCodeEdgeCases(unittest.TestCase):
 
     @unittest.skipIf(sys.platform == "win32", "UDS not available on Windows")
     def test_none_enabled_tools_uses_all(self):
-        """When enabled_tools is None, all sandbox tools should be available."""
+        """When enabled_tools is None, execute_code should fail closed."""
         code = (
             "from hermes_tools import terminal, web_search, read_file\n"
             "print('all imports ok')\n"
         )
-        with patch("model_tools.handle_function_call",
-                    return_value=json.dumps({"ok": True})):
-            result = json.loads(execute_code(code, task_id="test-none",
-                                             enabled_tools=None))
-        self.assertEqual(result["status"], "success")
-        self.assertIn("all imports ok", result["output"])
+        result = json.loads(execute_code(code, task_id="test-none",
+                                         enabled_tools=None))
+        self.assertEqual(result["status"], "error")
+        self.assertIn("explicit sandbox tool allowlist", result["error"])
 
     @unittest.skipIf(sys.platform == "win32", "UDS not available on Windows")
-    def test_empty_enabled_tools_uses_all(self):
-        """When enabled_tools is [] (empty), all sandbox tools should be available."""
+    def test_empty_enabled_tools_returns_error(self):
+        """When enabled_tools is [] (empty), execute_code should fail closed."""
         code = (
             "from hermes_tools import terminal, web_search\n"
             "print('imports ok')\n"
         )
-        with patch("model_tools.handle_function_call",
-                    return_value=json.dumps({"ok": True})):
-            result = json.loads(execute_code(code, task_id="test-empty",
-                                             enabled_tools=[]))
-        self.assertEqual(result["status"], "success")
-        self.assertIn("imports ok", result["output"])
+        result = json.loads(execute_code(code, task_id="test-empty",
+                                         enabled_tools=[]))
+        self.assertEqual(result["status"], "error")
+        self.assertIn("explicit sandbox tool allowlist", result["error"])
 
     @unittest.skipIf(sys.platform == "win32", "UDS not available on Windows")
-    def test_nonoverlapping_tools_fallback(self):
-        """When enabled_tools has no overlap with SANDBOX_ALLOWED_TOOLS,
-        should fall back to all allowed tools."""
+    def test_nonoverlapping_tools_returns_error(self):
+        """When enabled_tools has no sandbox overlap, execute_code should fail closed."""
         code = (
             "from hermes_tools import terminal\n"
             "print('fallback ok')\n"
         )
-        with patch("model_tools.handle_function_call",
-                    return_value=json.dumps({"ok": True})):
-            result = json.loads(execute_code(
-                code, task_id="test-nonoverlap",
-                enabled_tools=["vision_analyze", "browser_snapshot"],
-            ))
-        self.assertEqual(result["status"], "success")
-        self.assertIn("fallback ok", result["output"])
+        result = json.loads(execute_code(
+            code, task_id="test-nonoverlap",
+            enabled_tools=["vision_analyze", "browser_snapshot"],
+        ))
+        self.assertEqual(result["status"], "error")
+        self.assertIn("No sandbox-safe tools are enabled", result["error"])
 
 
 # ---------------------------------------------------------------------------

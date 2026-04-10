@@ -1145,8 +1145,8 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "API_SERVER_KEY": {
-        "description": "Bearer token for API server authentication. If empty, all requests are allowed (local use only).",
-        "prompt": "API server auth key (optional)",
+        "description": "Bearer token for API server authentication. Required before the API server will start.",
+        "prompt": "API server auth key",
         "url": None,
         "password": True,
         "category": "messaging",
@@ -1161,7 +1161,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "API_SERVER_HOST": {
-        "description": "Host/bind address for the API server (default: 127.0.0.1). Use 0.0.0.0 for network access — requires API_SERVER_KEY for security.",
+        "description": "Host/bind address for the API server (default: 127.0.0.1). Keep loopback-only unless you intentionally expose it behind another auth layer.",
         "prompt": "API server host",
         "url": None,
         "password": False,

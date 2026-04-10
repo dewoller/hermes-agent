@@ -62,6 +62,29 @@ SANDBOX_ALLOWED_TOOLS = frozenset([
     "terminal",
 ])
 
+
+def _resolve_sandbox_tools(enabled_tools: Optional[List[str]]) -> frozenset[str]:
+    """Resolve the sandbox-visible tool subset from the current session.
+
+    execute_code must fail closed when the caller does not explicitly expose at
+    least one sandbox-safe tool. Silent fallback to the full sandbox allowlist
+    turns a narrow session into a much broader capability surface.
+    """
+    if not enabled_tools:
+        raise ValueError(
+            "execute_code requires an explicit sandbox tool allowlist from the current session."
+        )
+
+    sandbox_tools = frozenset(SANDBOX_ALLOWED_TOOLS & set(enabled_tools))
+    if not sandbox_tools:
+        allowed = ", ".join(sorted(SANDBOX_ALLOWED_TOOLS))
+        raise ValueError(
+            "No sandbox-safe tools are enabled for execute_code. "
+            f"Enable at least one of: {allowed}."
+        )
+
+    return sandbox_tools
+
 # Resource limit defaults (overridable via config.yaml → code_execution.*)
 DEFAULT_TIMEOUT = 300        # 5 minutes
 DEFAULT_MAX_TOOL_CALLS = 50
@@ -698,10 +721,10 @@ def _execute_remote(
     timeout = _cfg.get("timeout", DEFAULT_TIMEOUT)
     max_tool_calls = _cfg.get("max_tool_calls", DEFAULT_MAX_TOOL_CALLS)
 
-    session_tools = set(enabled_tools) if enabled_tools else set()
-    sandbox_tools = frozenset(SANDBOX_ALLOWED_TOOLS & session_tools)
-    if not sandbox_tools:
-        sandbox_tools = SANDBOX_ALLOWED_TOOLS
+    try:
+        sandbox_tools = _resolve_sandbox_tools(enabled_tools)
+    except ValueError as exc:
+        return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
 
     effective_task_id = task_id or "default"
     env, env_type = _get_or_create_env(effective_task_id)
@@ -909,11 +932,10 @@ def execute_code(
     max_tool_calls = _cfg.get("max_tool_calls", DEFAULT_MAX_TOOL_CALLS)
 
     # Determine which tools the sandbox can call
-    session_tools = set(enabled_tools) if enabled_tools else set()
-    sandbox_tools = frozenset(SANDBOX_ALLOWED_TOOLS & session_tools)
-
-    if not sandbox_tools:
-        sandbox_tools = SANDBOX_ALLOWED_TOOLS
+    try:
+        sandbox_tools = _resolve_sandbox_tools(enabled_tools)
+    except ValueError as exc:
+        return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
 
     # --- Set up temp directory with hermes_tools.py and script.py ---
     tmpdir = tempfile.mkdtemp(prefix="hermes_sandbox_")

@@ -24,6 +24,7 @@ from aiohttp.test_utils import AioHTTPTestCase, TestClient, TestServer
 from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.api_server import (
     APIServerAdapter,
+    API_SERVER_ADAPTER_KEY,
     ResponseStore,
     _CORS_HEADERS,
     check_api_server_requirements,
@@ -148,6 +149,19 @@ class TestAdapterInit:
             "http://127.0.0.1:3000",
         )
 
+    @pytest.mark.asyncio
+    @patch("gateway.platforms.api_server.AIOHTTP_AVAILABLE", True)
+    async def test_connect_requires_api_key(self):
+        config = PlatformConfig(enabled=True, extra={"port": 0})
+        adapter = APIServerAdapter(config)
+
+        with patch("gateway.platforms.api_server.web.AppRunner") as mock_runner_cls, \
+             patch("gateway.platforms.api_server.web.TCPSite") as mock_site_cls:
+
+            assert await adapter.connect() is False
+            mock_runner_cls.assert_not_called()
+            mock_site_cls.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # Auth checking
@@ -155,7 +169,7 @@ class TestAdapterInit:
 
 
 class TestAuth:
-    def test_no_key_configured_allows_all(self):
+    def test_no_key_configured_allows_handler_tests(self):
         config = PlatformConfig(enabled=True)
         adapter = APIServerAdapter(config)
         mock_request = MagicMock()
@@ -217,7 +231,7 @@ def _create_app(adapter: APIServerAdapter) -> web.Application:
     """Create the aiohttp app from the adapter (without starting the full server)."""
     mws = [mw for mw in (cors_middleware, security_headers_middleware) if mw is not None]
     app = web.Application(middlewares=mws)
-    app["api_server_adapter"] = adapter
+    app[API_SERVER_ADAPTER_KEY] = adapter
     app.router.add_get("/health", adapter._handle_health)
     app.router.add_get("/v1/health", adapter._handle_health)
     app.router.add_get("/v1/models", adapter._handle_models)

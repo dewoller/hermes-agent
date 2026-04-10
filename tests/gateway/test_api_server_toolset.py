@@ -64,7 +64,7 @@ class TestApiServerPlatformConfig:
     def test_platforms_dict_includes_api_server(self):
         from hermes_cli.tools_config import PLATFORMS
         assert "api_server" in PLATFORMS
-        assert PLATFORMS["api_server"]["default_toolset"] == "hermes-api-server"
+        assert PLATFORMS["api_server"]["default_toolset"] == "safe"
 
 
 class TestApiServerAdapterToolset:
@@ -85,7 +85,7 @@ class TestApiServerAdapterToolset:
                                         "provider": None, "api_mode": None,
                                         "command": None, "args": []}
             mock_model.return_value = "test/model"
-            # No platform_toolsets override — should fall back to hermes-api-server default
+            # No platform_toolsets override — should fall back to the hardened default
             mock_config.return_value = {}
             mock_agent_cls.return_value = MagicMock()
 
@@ -95,7 +95,7 @@ class TestApiServerAdapterToolset:
             call_kwargs = mock_agent_cls.call_args
             toolsets = call_kwargs.kwargs.get("enabled_toolsets")
             assert isinstance(toolsets, list)
-            assert len(toolsets) > 0
+            assert sorted(toolsets) == ["image_gen", "vision", "web"]
             assert call_kwargs.kwargs.get("platform") == "api_server"
 
     @patch("gateway.platforms.api_server.AIOHTTP_AVAILABLE", True)

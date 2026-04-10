@@ -1131,11 +1131,9 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
         })
 
     # SSRF protection — block private/internal addresses before navigating.
-    # Skipped for local backends (Camofox, headless Chromium without a cloud
-    # provider) because the agent already has full local network access via
-    # the terminal tool.  Can also be opted out for cloud mode via
+    # Applies to every backend unless the user explicitly opts out via
     # ``browser.allow_private_urls`` in config.
-    if not _is_local_backend() and not _allow_private_urls() and not _is_safe_url(url):
+    if not _allow_private_urls() and not _is_safe_url(url):
         return json.dumps({
             "success": False,
             "error": "Blocked: URL targets a private or internal address",
@@ -1177,8 +1175,7 @@ def browser_navigate(url: str, task_id: Optional[str] = None) -> str:
         # Post-redirect SSRF check — if the browser followed a redirect to a
         # private/internal address, block the result so the model can't read
         # internal content via subsequent browser_snapshot calls.
-        # Skipped for local backends (same rationale as the pre-nav check).
-        if not _is_local_backend() and not _allow_private_urls() and final_url and final_url != url and not _is_safe_url(final_url):
+        if not _allow_private_urls() and final_url and final_url != url and not _is_safe_url(final_url):
             # Navigate away to a blank page to prevent snapshot leaks
             _run_browser_command(effective_task_id, "open", ["about:blank"], timeout=10)
             return json.dumps({

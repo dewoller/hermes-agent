@@ -1,12 +1,8 @@
-"""Tests that browser_navigate SSRF checks respect local-backend mode and
-the allow_private_urls setting.
+"""Tests that browser_navigate SSRF checks respect the allow_private_urls setting.
 
-Local backends (Camofox, headless Chromium without a cloud provider) skip
-SSRF checks entirely — the agent already has full local-network access via
-the terminal tool.
-
-Cloud backends (Browserbase, BrowserUse) enforce SSRF by default.  Users
-can opt out for cloud mode via ``browser.allow_private_urls: true``.
+All browser backends enforce SSRF protection by default. Users can opt out via
+``browser.allow_private_urls: true`` when they explicitly need private-address
+navigation.
 """
 
 import json
@@ -84,17 +80,18 @@ class TestPreNavigationSsrf:
 
         assert result["success"] is True
 
-    # -- Local mode: SSRF skipped ----------------------------------------------
+    # -- Local mode: SSRF still active -----------------------------------------
 
-    def test_local_allows_private_url(self, monkeypatch, _common_patches):
-        """Local backends skip SSRF — private URLs are always allowed."""
+    def test_local_blocks_private_url_by_default(self, monkeypatch, _common_patches):
+        """Local backends must also block private URLs by default."""
         monkeypatch.setattr(browser_tool, "_is_local_backend", lambda: True)
         monkeypatch.setattr(browser_tool, "_allow_private_urls", lambda: False)
         monkeypatch.setattr(browser_tool, "_is_safe_url", lambda url: False)
 
         result = json.loads(browser_tool.browser_navigate(self.PRIVATE_URL))
 
-        assert result["success"] is True
+        assert result["success"] is False
+        assert "private or internal address" in result["error"]
 
     def test_local_allows_public_url(self, monkeypatch, _common_patches):
         """Local backends pass public URLs too (sanity check)."""
@@ -199,10 +196,10 @@ class TestPostRedirectSsrf:
         assert result["success"] is True
         assert result["url"] == self.PRIVATE_FINAL_URL
 
-    # -- Local mode: redirect SSRF skipped -------------------------------------
+    # -- Local mode: redirect SSRF still active --------------------------------
 
-    def test_local_allows_redirect_to_private(self, monkeypatch, _common_patches):
-        """Redirects to private addresses pass in local mode."""
+    def test_local_blocks_redirect_to_private(self, monkeypatch, _common_patches):
+        """Redirects to private addresses are blocked in local mode too."""
         monkeypatch.setattr(browser_tool, "_is_local_backend", lambda: True)
         monkeypatch.setattr(browser_tool, "_allow_private_urls", lambda: False)
         monkeypatch.setattr(
@@ -216,8 +213,8 @@ class TestPostRedirectSsrf:
 
         result = json.loads(browser_tool.browser_navigate(self.PUBLIC_URL))
 
-        assert result["success"] is True
-        assert result["url"] == self.PRIVATE_FINAL_URL
+        assert result["success"] is False
+        assert "redirect landed on a private/internal address" in result["error"]
 
     def test_cloud_allows_redirect_to_public(self, monkeypatch, _common_patches):
         """Redirects to public addresses always pass (cloud mode)."""

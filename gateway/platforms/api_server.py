@@ -36,6 +36,11 @@ except ImportError:
     AIOHTTP_AVAILABLE = False
     web = None  # type: ignore[assignment]
 
+if AIOHTTP_AVAILABLE:
+    API_SERVER_ADAPTER_KEY = web.AppKey("api_server_adapter", Any)
+else:
+    API_SERVER_ADAPTER_KEY = "api_server_adapter"
+
 from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import (
     BasePlatformAdapter,
@@ -177,7 +182,7 @@ if AIOHTTP_AVAILABLE:
     @web.middleware
     async def cors_middleware(request, handler):
         """Add CORS headers for explicitly allowed origins; handle OPTIONS preflight."""
-        adapter = request.app.get("api_server_adapter")
+        adapter = request.app.get(API_SERVER_ADAPTER_KEY) or request.app.get("api_server_adapter")
         origin = request.headers.get("Origin", "")
         cors_headers = None
         if adapter is not None:
@@ -363,10 +368,9 @@ class APIServerAdapter(BasePlatformAdapter):
         Validate Bearer token from Authorization header.
 
         Returns None if auth is OK, or a 401 web.Response on failure.
-        If no API key is configured, all requests are allowed.
         """
         if not self._api_key:
-            return None  # No key configured — allow all (local-only use)
+            return None  # Server startup now enforces key presence
 
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
@@ -1603,10 +1607,14 @@ class APIServerAdapter(BasePlatformAdapter):
             logger.warning("[%s] aiohttp not installed", self.name)
             return False
 
+        if not self._api_key:
+            logger.error("[%s] API server requires API_SERVER_KEY (or platforms.api_server.extra.key)", self.name)
+            return False
+
         try:
             mws = [mw for mw in (cors_middleware, body_limit_middleware, security_headers_middleware) if mw is not None]
             self._app = web.Application(middlewares=mws)
-            self._app["api_server_adapter"] = self
+            self._app[API_SERVER_ADAPTER_KEY] = self
             self._app.router.add_get("/health", self._handle_health)
             self._app.router.add_get("/v1/health", self._handle_health)
             self._app.router.add_get("/v1/models", self._handle_models)

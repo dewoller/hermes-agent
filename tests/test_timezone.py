@@ -163,7 +163,7 @@ class TestCodeExecutionTZ:
             result = _json.loads(self._execute_code(
                 code='import os; print(os.environ.get("TZ", "NOT_SET"))',
                 task_id="tz-test",
-                enabled_tools=[],
+                enabled_tools=["read_file"],
             ))
         assert result["status"] == "success"
         assert "Asia/Kolkata" in result["output"]
@@ -177,7 +177,7 @@ class TestCodeExecutionTZ:
             result = _json.loads(self._execute_code(
                 code='import os; print(os.environ.get("TZ", "NOT_SET"))',
                 task_id="tz-test-empty",
-                enabled_tools=[],
+                enabled_tools=["read_file"],
             ))
         assert result["status"] == "success"
         assert "NOT_SET" in result["output"]
@@ -191,7 +191,7 @@ class TestCodeExecutionTZ:
             result = _json.loads(self._execute_code(
                 code='import os; print(os.environ.get("HERMES_TIMEZONE", "NOT_SET"))',
                 task_id="tz-leak-test",
-                enabled_tools=[],
+                enabled_tools=["read_file"],
             ))
         assert result["status"] == "success"
         assert "NOT_SET" in result["output"]
