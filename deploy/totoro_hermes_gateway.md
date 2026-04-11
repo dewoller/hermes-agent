@@ -113,6 +113,20 @@ External nutrition-service dependency:
 - `NUTRITION_SERVICE_BASE_URL` points Hermes at the standalone nutrition API
 - Hermes does not own the nutrition database or import pipeline
 
+## New Telegram Bot Token
+
+Telegram bot tokens belong in the Hermes gateway instance secret, not in the standalone nutrition service.
+
+To provision a new bot token for a Hermes-backed nutrition bot:
+
+1. Talk to `@BotFather` and create the new bot with `/newbot`.
+2. Copy the token into the target Hermes instance `.env.sops` as `TELEGRAM_BOT_TOKEN=...`.
+3. Add `TELEGRAM_ALLOWED_USERS=...` for the accounts allowed to use that bot.
+4. If that bot should call the standalone nutrition service from a Totoro Docker container, set `NUTRITION_SERVICE_BASE_URL=http://172.17.0.1:8781`.
+5. Restart the corresponding Hermes systemd unit after saving the secret.
+
+The nutrition service itself should never store or read Telegram bot tokens.
+
 Logs:
 
 - `/tank/services/active_services/hermes-dee/logs/hermes.log`
