@@ -75,12 +75,6 @@ Add under `mcp_servers`:
 ```bash
 # Activate Tracy's workspace MCP
 sudo systemctl enable --now google-workspace-mcp-tracy.service
-
-# Decommission redundant separate services
-sudo systemctl disable --now gmail-mcp.service
-sudo systemctl disable --now gmail-mcp-tracy.service
-sudo systemctl disable --now google-calendar-mcp.service
-sudo systemctl disable --now google-calendar-mcp-tracy.service
 ```
 
 ### 4. Deploy Hermes
@@ -111,17 +105,24 @@ Run the existing deploy pipeline to push updated configs to totoro containers.
 
 ## Testing
 
-1. Verify `google-workspace-mcp-tracy.service` is active: `systemctl status google-workspace-mcp-tracy`
-2. Verify HTTP endpoint responds: `curl -s http://localhost:3202/mcp` (expect SSE initialize response)
+1. On totoro: verify `google-workspace-mcp-tracy.service` is active: `systemctl status google-workspace-mcp-tracy`
+2. On totoro: verify HTTP endpoint responds: `curl -s http://localhost:3202/mcp` (expect SSE initialize response)
 3. Deploy hermes-dee and hermes-tracy
-4. In each bot, confirm `workspace` tools are listed: ask bot to list available tools
+4. Confirm workspace tools registered in container logs: `docker logs hermes-dee | grep workspace` and `docker logs hermes-tracy | grep workspace`
 5. Smoke test: ask each bot to read its own most recent email
 6. Smoke test: ask each bot to list today's calendar events
+7. Only after smoke tests pass — decommission redundant services on totoro:
+   ```bash
+   sudo systemctl disable --now gmail-mcp.service
+   sudo systemctl disable --now gmail-mcp-tracy.service
+   sudo systemctl disable --now google-calendar-mcp.service
+   sudo systemctl disable --now google-calendar-mcp-tracy.service
+   ```
 
 ---
 
 ## Out of Scope
 
-- Business account workspace MCP (`google-workspace-mcp-business.service`, port 3202) — separate concern
+- Business account workspace MCP (`google-workspace-mcp-business.service`, port 3302) — separate concern
 - Tool filtering / read-only mode — not required
 - Auth token rotation policy — managed by Google's OAuth2 refresh mechanism
