@@ -17,6 +17,22 @@ from acp_adapter.events import (
 )
 
 
+def _patch_run_coroutine_threadsafe():
+    """Dispose submitted coroutines when run_coroutine_threadsafe is mocked."""
+
+    future = MagicMock(spec=Future)
+    future.result.return_value = None
+
+    def _submit(coro, _loop):
+        coro.close()
+        return future
+
+    return patch(
+        "acp_adapter.events.asyncio.run_coroutine_threadsafe",
+        side_effect=_submit,
+    )
+
+
 @pytest.fixture()
 def mock_conn():
     """Mock ACP Client connection."""
@@ -47,11 +63,7 @@ class TestToolProgressCallback:
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids)
 
         # Run callback in the event loop context
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe() as mock_rcts:
             cb("tool.started", "terminal", "$ ls -la", {"command": "ls -la"})
 
         # Should have tracked the tool call ID
@@ -70,11 +82,7 @@ class TestToolProgressCallback:
 
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe():
             cb("tool.started", "read_file", "Reading /etc/hosts", '{"path": "/etc/hosts"}')
 
         assert "read_file" in tool_call_ids
@@ -86,11 +94,7 @@ class TestToolProgressCallback:
 
         cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe():
             cb("tool.started", "terminal", "$ echo hi", None)
 
         assert "terminal" in tool_call_ids
@@ -103,11 +107,7 @@ class TestToolProgressCallback:
         progress_cb = make_tool_progress_cb(mock_conn, "session-1", loop, tool_call_ids)
         step_cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe():
             progress_cb("tool.started", "terminal", "$ ls", {"command": "ls"})
             progress_cb("tool.started", "terminal", "$ pwd", {"command": "pwd"})
             assert len(tool_call_ids["terminal"]) == 2
@@ -131,11 +131,7 @@ class TestThinkingCallback:
 
         cb = make_thinking_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe() as mock_rcts:
             cb("Analyzing the code...")
 
         mock_rcts.assert_called_once()
@@ -165,11 +161,7 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe() as mock_rcts:
             cb(1, [{"name": "terminal", "result": "success"}])
 
         # Tool should have been removed from tracking
@@ -195,11 +187,7 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe() as mock_rcts:
             cb(2, ["read_file"])
 
         assert "read_file" not in tool_call_ids
@@ -214,12 +202,8 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
+        with _patch_run_coroutine_threadsafe(), \
              patch("acp_adapter.events.build_tool_complete") as mock_btc:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
             # Provide a result string in the tool info dict
             cb(1, [{"name": "terminal", "result": '{"output": "hello"}'}])
 
@@ -236,12 +220,8 @@ class TestStepCallback:
 
         cb = make_step_cb(mock_conn, "session-1", loop, tool_call_ids)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts, \
+        with _patch_run_coroutine_threadsafe(), \
              patch("acp_adapter.events.build_tool_complete") as mock_btc:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
             cb(1, [{"name": "web_search", "result": None}])
 
         mock_btc.assert_called_once_with("tc-aaa", "web_search", result=None)
@@ -259,11 +239,7 @@ class TestMessageCallback:
 
         cb = make_message_cb(mock_conn, "session-1", loop)
 
-        with patch("acp_adapter.events.asyncio.run_coroutine_threadsafe") as mock_rcts:
-            future = MagicMock(spec=Future)
-            future.result.return_value = None
-            mock_rcts.return_value = future
-
+        with _patch_run_coroutine_threadsafe() as mock_rcts:
             cb("Here is your answer.")
 
         mock_rcts.assert_called_once()

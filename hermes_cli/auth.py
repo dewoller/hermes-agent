@@ -28,6 +28,7 @@ import threading
 import time
 import uuid
 import webbrowser
+import ssl
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -1424,7 +1425,7 @@ def _resolve_verify(
     insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None,
     auth_state: Optional[Dict[str, Any]] = None,
-) -> bool | str:
+) -> bool | ssl.SSLContext:
     tls_state = auth_state.get("tls") if isinstance(auth_state, dict) else {}
     tls_state = tls_state if isinstance(tls_state, dict) else {}
 
@@ -1442,7 +1443,10 @@ def _resolve_verify(
     if effective_insecure:
         return False
     if effective_ca:
-        return str(effective_ca)
+        ca_path = str(effective_ca)
+        if os.path.isdir(ca_path):
+            return ssl.create_default_context(capath=ca_path)
+        return ssl.create_default_context(cafile=ca_path)
     return True
 
 

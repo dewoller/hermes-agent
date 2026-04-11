@@ -232,6 +232,10 @@ def _has_any_provider_configured() -> bool:
         for provider_id, pconfig in PROVIDER_REGISTRY.items():
             if pconfig.auth_type != "api_key":
                 continue
+            # Claude Code credentials are reported through Anthropic status, but
+            # they should not suppress the setup wizard on a fresh Hermes install.
+            if provider_id == "anthropic" and not _has_hermes_config:
+                continue
             status = get_auth_status(provider_id)
             if status.get("logged_in"):
                 return True

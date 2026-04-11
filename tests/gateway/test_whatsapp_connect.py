@@ -84,10 +84,13 @@ def _mock_aiohttp(status=200, json_data=None, json_side_effect=None):
 
 def _connect_patches(mock_proc, mock_fh, mock_client_cls=None):
     """Return a dict of common patches needed to reach the health-check loop."""
-    patches = {
-        "gateway.platforms.whatsapp.check_whatsapp_requirements": True,
-        "gateway.platforms.whatsapp.asyncio.create_task": MagicMock(),
-    }
+    def _drop_task(coro, *args, **kwargs):
+        if asyncio.iscoroutine(coro):
+            coro.close()
+        task = MagicMock()
+        task.done.return_value = True
+        return task
+
     base = [
         patch("gateway.platforms.whatsapp.check_whatsapp_requirements", return_value=True),
         patch.object(Path, "exists", return_value=True),
@@ -96,7 +99,7 @@ def _connect_patches(mock_proc, mock_fh, mock_client_cls=None):
         patch("subprocess.Popen", return_value=mock_proc),
         patch("builtins.open", return_value=mock_fh),
         patch("gateway.platforms.whatsapp.asyncio.sleep", new_callable=AsyncMock),
-        patch("gateway.platforms.whatsapp.asyncio.create_task"),
+        patch("gateway.platforms.whatsapp.asyncio.create_task", side_effect=_drop_task),
     ]
     if mock_client_cls is not None:
         base.append(patch("aiohttp.ClientSession", mock_client_cls))

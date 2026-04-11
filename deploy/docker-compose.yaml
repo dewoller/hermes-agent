@@ -28,7 +28,6 @@ services:
       - /tank/services/active_services/hermes-tracy:/data
       - /run/secrets/hermes-tracy/.env:/data/.env:ro
       - /tank/services/active_services/hermes/deploy/config-tracy.yaml:/opt/config-seed.yaml:ro
-      - /tank/personal/tracy-vault:/workspace/extra/obsidian
     environment:
       - HERMES_HOME=/data
     logging:
