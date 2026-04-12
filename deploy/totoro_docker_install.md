@@ -194,3 +194,30 @@ terminal:
 ```
 
 That path is backed by the writable bind mount from `/tank/personal/obsidian-personal` for `hermes-dee` only. Tracy keeps the simpler `/data`-only runtime shape.
+
+## hermes-nutrition-bot
+
+A dedicated Telegram DM nutrition bot — separate from Dee and Tracy, no systemd unit.
+
+**Container:** `hermes-nutrition-bot`
+**Data path:** `/tank/services/active_services/hermes-nutrition-bot`
+**Config seed:** `deploy/config-nutrition.yaml` (no MCP, no STT, no Obsidian)
+
+**Required env (SOPS-encrypted .env):**
+- `TELEGRAM_BOT_TOKEN` — separate bot token from @BotFather
+- `TELEGRAM_ALLOWED_USERS` — comma-separated Telegram user IDs
+- `NUTRITION_SERVICE_BASE_URL=http://172.17.0.1:8781`
+- `HERMES_NUTRITION_BOT=1`
+
+**Deploy:**
+```bash
+./deploy/deploy.sh totoro_ts nutrition-bot
+```
+
+**First-start Codex auth (required before photo analysis works):**
+```bash
+docker exec -it hermes-nutrition-bot hermes login --provider openai-codex
+```
+
+**Restart:** `restart: unless-stopped` (Docker Compose manages restart — no systemd unit).
+**Scope:** Telegram DMs only. No MCP servers, no general chat, no Obsidian.

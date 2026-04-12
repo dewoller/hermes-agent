@@ -36,3 +36,20 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  hermes-nutrition-bot:
+    container_name: hermes-nutrition-bot
+    image: hermes-gateway:latest
+    user: "1000:1004"
+    environment:
+      - HERMES_HOME=/data
+    volumes:
+      - /tank/services/active_services/hermes-nutrition-bot:/data
+      - /tank/services/active_services/hermes/deploy/config-nutrition.yaml:/opt/config-seed.yaml:ro
+      - /run/secrets/hermes-nutrition-bot/.env:/data/.env:ro
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

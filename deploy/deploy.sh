@@ -42,10 +42,15 @@ case "${INSTANCE}" in
     dee)   restart_instance dee ;;
     tracy) restart_instance tracy ;;
     both)  restart_instance dee; restart_instance tracy ;;
-    *)     echo "Unknown instance: ${INSTANCE}. Use: dee, tracy, or both"; exit 1 ;;
+    nutrition-bot)
+      echo "--- Restarting hermes-nutrition-bot ---"
+      ssh "${HOST}" "cd ${CODE_DIR} && docker compose -f deploy/docker-compose.yaml up -d --no-deps hermes-nutrition-bot"
+      ;;
+    *)     echo "Unknown instance: ${INSTANCE}. Use: dee, tracy, both, or nutrition-bot"; exit 1 ;;
 esac
 
 echo ""
 echo "=== Deploy complete ==="
 echo "  Logs: ssh ${HOST} 'docker logs -f hermes-dee'"
 echo "  Logs: ssh ${HOST} 'docker logs -f hermes-tracy'"
+echo "  Logs: ssh ${HOST} 'docker logs -f hermes-nutrition-bot'"

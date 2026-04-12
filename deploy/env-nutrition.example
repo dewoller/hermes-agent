@@ -1,0 +1,6 @@
+# Secret env for hermes-nutrition-bot.
+# Fill in and SOPS-encrypt before deploying.
+TELEGRAM_BOT_TOKEN=<new BotFather token>
+TELEGRAM_ALLOWED_USERS=<comma-separated Telegram user IDs>
+NUTRITION_SERVICE_BASE_URL=http://172.17.0.1:8781
+HERMES_NUTRITION_BOT=1

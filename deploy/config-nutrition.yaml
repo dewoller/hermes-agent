@@ -1,0 +1,8 @@
+# Seed config for hermes-nutrition-bot instance.
+# Narrow: no MCP servers, no STT, no Obsidian mount.
+model:
+  default: "gpt-5.4"
+  provider: "openai-codex"
+
+memory:
+  mode: "local"
