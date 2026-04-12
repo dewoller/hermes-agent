@@ -32,8 +32,7 @@ def _require_service():
 
 
 @pytest.fixture
-def runner_and_adapter(monkeypatch):
-    monkeypatch.setenv("HERMES_NUTRITION_BOT", "1")
+def runner_and_adapter():
     from gateway.run import GatewayRunner
     runner = object.__new__(GatewayRunner)
     runner.config = MagicMock()
@@ -82,8 +81,14 @@ async def test_e2e_callback_select_flow(_require_service, runner_and_adapter):
     """nc: callback → gate → bridge → nutrition-service /select → Logged!"""
     runner, adapter = runner_and_adapter
     from gateway.nutrition_client import NutritionClient
+    from gateway.session import build_session_key
     client = NutritionClient()
-    data = await client.analyze("e2e_cb_user", [{"name": "banana", "quantity_g": 120, "confidence": 0.9}])
+    session_key = build_session_key(
+        SessionSource(platform=Platform.TELEGRAM, chat_id="e2e_cb_user", user_id="e2e_cb_user", chat_type="dm"),
+        group_sessions_per_user=True,
+        thread_sessions_per_user=False,
+    )
+    data = await client.analyze(session_key, [{"name": "banana", "quantity_g": 120, "confidence": 0.9}])
     set_id = data["candidate_set_id"]
     cand_id = data["candidates"][0]["id"]
 
