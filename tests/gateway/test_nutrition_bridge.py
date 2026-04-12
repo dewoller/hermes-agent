@@ -176,3 +176,13 @@ async def test_correction_server_error_sends_unavailable(mock_client, mock_adapt
     await bridge.handle_correction("text", "sess", mock_adapter, "123")
 
     assert "unavailable" in mock_adapter.send.call_args[0][1].lower()
+
+
+@pytest.mark.asyncio
+async def test_correction_get_pending_error_sends_unavailable(mock_client, mock_adapter):
+    mock_client.get_pending = AsyncMock(side_effect=Exception("timeout"))
+    bridge = NutritionBridge(client=mock_client)
+    await bridge.handle_correction("some text", "sess", mock_adapter, "123")
+
+    mock_client.correct.assert_not_called()
+    assert "unavailable" in mock_adapter.send.call_args[0][1].lower()

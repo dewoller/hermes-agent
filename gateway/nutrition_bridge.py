@@ -17,6 +17,14 @@ if TYPE_CHECKING:
 
 from gateway.nutrition_client import NutritionClient
 
+try:
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    _TELEGRAM_AVAILABLE = True
+except ImportError:
+    _TELEGRAM_AVAILABLE = False
+    InlineKeyboardButton = None
+    InlineKeyboardMarkup = None
+
 logger = logging.getLogger(__name__)
 
 NUTRITION_SOUL = (
@@ -144,7 +152,14 @@ class NutritionBridge:
         candidates: list[dict],
     ) -> None:
         """Render an inline keyboard with one button per candidate."""
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        if not _TELEGRAM_AVAILABLE:
+            logger.error("python-telegram-bot not installed; cannot send inline keyboard")
+            await adapter.send(chat_id, "Keyboard unavailable — select item by replying with its name.")
+            return
+
+        if not candidates:
+            await adapter.send(chat_id, _MSG_BAD_PHOTO)
+            return
 
         buttons = [
             InlineKeyboardButton(
