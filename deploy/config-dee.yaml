@@ -2,8 +2,8 @@
 # Secrets (API keys, tokens) live in .env via SOPS, not here.
 
 model:
-  default: "gpt-5.4"
-  provider: "openai-codex"
+  default: "minimax/minimax-m2.7"
+  provider: "openrouter"
 
 terminal:
   backend: "local"
