@@ -1,24 +1,24 @@
+# ABOUTME: Systemd unit managing hermes-tracy Docker container (Tracy instance).
+# ABOUTME: Secrets decrypted from SOPS at start; stored in /run/secrets/ (tmpfs).
+
 [Unit]
 Description=Hermes Agent - Tracy (containerized)
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
+OnFailure=cron-alert@%n.service
 
 [Service]
-Type=simple
-User=dewoller
-Group=dewoller
+Type=oneshot
+RemainAfterExit=true
+User=root
+Group=root
 WorkingDirectory=/tank/services/active_services/hermes/deploy
 
-ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-tracy
-ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml up --no-log-prefix hermes-tracy
+ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-tracy /tank/services/active_services/hermes-tracy/.env.sops
+ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml up -d --no-deps hermes-tracy
 ExecStop=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml stop hermes-tracy
 ExecStopPost=+/bin/rm -rf /run/secrets/hermes-tracy
-
-Restart=always
-RestartSec=10
-StandardOutput=append:/tank/services/active_services/hermes-tracy/logs/hermes.log
-StandardError=append:/tank/services/active_services/hermes-tracy/logs/hermes.error.log
 
 [Install]
 WantedBy=multi-user.target

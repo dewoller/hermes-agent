@@ -1,24 +1,24 @@
+# ABOUTME: Systemd unit managing hermes-dee Docker container (Dee instance).
+# ABOUTME: Secrets decrypted from SOPS at start; stored in /run/secrets/ (tmpfs).
+
 [Unit]
 Description=Hermes Agent - Dee (containerized)
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
+OnFailure=cron-alert@%n.service
 
 [Service]
-Type=simple
-User=dewoller
-Group=dewoller
+Type=oneshot
+RemainAfterExit=true
+User=root
+Group=root
 WorkingDirectory=/tank/services/active_services/hermes/deploy
 
-ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-dee
-ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml up --no-log-prefix hermes-dee
+ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-dee /tank/services/active_services/hermes-dee/.env.sops
+ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml up -d --no-deps hermes-dee
 ExecStop=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml stop hermes-dee
 ExecStopPost=+/bin/rm -rf /run/secrets/hermes-dee
-
-Restart=always
-RestartSec=10
-StandardOutput=append:/tank/services/active_services/hermes-dee/logs/hermes.log
-StandardError=append:/tank/services/active_services/hermes-dee/logs/hermes.error.log
 
 [Install]
 WantedBy=multi-user.target

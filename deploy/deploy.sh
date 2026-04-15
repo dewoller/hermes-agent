@@ -21,15 +21,9 @@ ssh "${HOST}" "cd ${CODE_DIR} && git pull --ff-only"
 echo "--- Building container image ---"
 ssh "${HOST}" "cd ${CODE_DIR} && docker build -f deploy/Dockerfile.gateway -t hermes-gateway:latest ."
 
-# Step 3: Update systemd units
+# Step 3: Update systemd units via deploy-service.sh
 echo "--- Updating systemd services ---"
-scp "$(dirname "$0")/hermes-dee.service" "${HOST}:/tmp/hermes-dee.service"
-scp "$(dirname "$0")/hermes-tracy.service" "${HOST}:/tmp/hermes-tracy.service"
-ssh "${HOST}" bash -s <<'REMOTE_SCRIPT'
-sudo cp /tmp/hermes-dee.service /etc/systemd/system/hermes-dee.service
-sudo cp /tmp/hermes-tracy.service /etc/systemd/system/hermes-tracy.service
-sudo systemctl daemon-reload
-REMOTE_SCRIPT
+ssh "${HOST}" "sudo /tank/services/active_services/infra-shared/deploy-service.sh hermes"
 
 # Step 4: Restart requested instances
 restart_instance() {
