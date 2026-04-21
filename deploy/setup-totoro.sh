@@ -4,8 +4,8 @@
 set -euo pipefail
 
 HOST="${1:-totoro_ts}"
-CODE_DIR="/tank/services/active_services/hermes"
-REPO_URL="https://github.com/dewoller/hermes-agent.git"
+CODE_DIR="/tank/services/active_services/hermes-agent"
+REPO_URL="https://github.com/realmindsai/hermes-agent.git"
 
 # SOPS age recipients (same as nanoclaw)
 AGE_R0="age1nugp23x9246u5l6dl4mmkzm5en5ty885em875grclryv8n7ux9psgg9tjz"
@@ -38,7 +38,7 @@ echo ""
 echo "--- Step 2: Create instance directories ---"
 ssh "${HOST}" bash -s <<'REMOTE_SCRIPT'
 set -euo pipefail
-CODE_DIR="/tank/services/active_services/hermes"
+CODE_DIR="/tank/services/active_services/hermes-agent"
 
 for INSTANCE in hermes-dee hermes-tracy hermes-nutrition-bot; do
     DIR="/tank/services/active_services/${INSTANCE}"
@@ -62,7 +62,7 @@ echo ""
 echo "--- Step 3: Install Python dependencies ---"
 ssh "${HOST}" bash -s <<'REMOTE_SCRIPT'
 set -euo pipefail
-CODE_DIR="/tank/services/active_services/hermes"
+CODE_DIR="/tank/services/active_services/hermes-agent"
 cd "${CODE_DIR}"
 
 # Use uv if available, fall back to pip
@@ -90,7 +90,7 @@ echo ""
 echo "--- Step 4: WhatsApp bridge ---"
 ssh "${HOST}" bash -s <<'REMOTE_SCRIPT'
 set -euo pipefail
-CODE_DIR="/tank/services/active_services/hermes"
+CODE_DIR="/tank/services/active_services/hermes-agent"
 cd "${CODE_DIR}/scripts/whatsapp-bridge"
 if [ -f "package.json" ]; then
     npm install
@@ -181,7 +181,7 @@ echo "     sops .env.sops    # Add real TELEGRAM_BOT_TOKEN, etc."
 echo ""
 echo "  2. Login to OpenAI Codex (for each instance):"
 echo "     HERMES_HOME=/tank/services/active_services/hermes-dee \\"
-echo "       /tank/services/active_services/hermes/.venv/bin/hermes login --provider openai-codex"
+echo "       /tank/services/active_services/hermes-agent/.venv/bin/hermes login --provider openai-codex"
 echo ""
 echo "  3. Start services:"
 echo "     sudo systemctl start hermes-dee"

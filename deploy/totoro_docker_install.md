@@ -7,13 +7,13 @@ Verified against the live Totoro host on April 10, 2026:
 - `hermes-dee.service` is active
 - `hermes-tracy.service` is active
 - Docker containers `hermes-dee` and `hermes-tracy` are running from `hermes-gateway:latest`
-- The repo checkout on Totoro is `/tank/services/active_services/hermes`
+- The repo checkout on Totoro is `/tank/services/active_services/hermes-agent`
 
 ## Layout
 
 The install has four layers:
 
-1. The git checkout lives at `/tank/services/active_services/hermes`.
+1. The git checkout lives at `/tank/services/active_services/hermes-agent`.
 2. Docker builds `hermes-gateway:latest` from `deploy/Dockerfile.gateway`.
 3. systemd owns the long-running services: `hermes-dee.service` and `hermes-tracy.service`.
 4. Each instance gets its own `HERMES_HOME` bind mount:
@@ -48,7 +48,7 @@ Run the setup script from the local machine:
 
 That script does the following on Totoro:
 
-1. Clones or updates the repo at `/tank/services/active_services/hermes`.
+1. Clones or updates the repo at `/tank/services/active_services/hermes-agent`.
 2. Creates instance homes for `hermes-dee` and `hermes-tracy`.
 3. Creates `.venv` in the repo checkout and installs `.[messaging,mcp,cli,cron]`.
 4. Installs WhatsApp bridge Node dependencies.
@@ -68,10 +68,10 @@ cd /tank/services/active_services/hermes-tracy
 sops .env.sops
 
 HERMES_HOME=/tank/services/active_services/hermes-dee \
-  /tank/services/active_services/hermes/.venv/bin/hermes login --provider openai-codex
+  /tank/services/active_services/hermes-agent/.venv/bin/hermes login --provider openai-codex
 
 HERMES_HOME=/tank/services/active_services/hermes-tracy \
-  /tank/services/active_services/hermes/.venv/bin/hermes login --provider openai-codex
+  /tank/services/active_services/hermes-agent/.venv/bin/hermes login --provider openai-codex
 
 sudo systemctl start hermes-dee
 sudo systemctl start hermes-tracy
@@ -81,7 +81,7 @@ sudo systemctl start hermes-tracy
 
 Code checkout:
 
-- `/tank/services/active_services/hermes`
+- `/tank/services/active_services/hermes-agent`
 
 Per-instance state:
 

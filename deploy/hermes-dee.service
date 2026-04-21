@@ -13,11 +13,11 @@ Type=oneshot
 RemainAfterExit=true
 User=root
 Group=root
-WorkingDirectory=/tank/services/active_services/hermes/deploy
+WorkingDirectory=/tank/services/active_services/hermes-agent/deploy
 
 ExecStartPre=+/usr/local/bin/sops-decrypt.sh hermes-dee /tank/services/active_services/hermes-dee/.env.sops
-ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml up -d --no-deps hermes-dee
-ExecStop=/usr/bin/docker compose -f /tank/services/active_services/hermes/deploy/docker-compose.yaml stop hermes-dee
+ExecStart=/usr/bin/docker compose -f /tank/services/active_services/hermes-agent/deploy/docker-compose.yaml up -d --no-deps hermes-dee
+ExecStop=/usr/bin/docker compose -f /tank/services/active_services/hermes-agent/deploy/docker-compose.yaml stop hermes-dee
 ExecStopPost=+/bin/rm -rf /run/secrets/hermes-dee
 
 [Install]

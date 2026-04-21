@@ -9,7 +9,7 @@ set -euo pipefail
 
 HOST="${1:-totoro_ts}"
 INSTANCE="${2:-both}"
-CODE_DIR="/tank/services/active_services/hermes"
+CODE_DIR="/tank/services/active_services/hermes-agent"
 
 echo "=== Deploying Hermes Agent to ${HOST} ==="
 
