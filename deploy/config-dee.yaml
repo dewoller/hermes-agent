@@ -1,9 +1,18 @@
 # Hermes Agent - Dee's Configuration
 # Secrets (API keys, tokens) live in .env via SOPS, not here.
 
+# --- Model provider switch ---
+# Uncomment one block, comment the other, then restart hermes-dee.
+#
+# Option A: OpenAI Codex (re-auth if exhausted: hermes auth openai-codex)
 model:
-  default: "minimax/minimax-m2.7"
-  provider: "openrouter"
+  default: "gpt-5.5"
+  provider: "openai-codex"
+#
+# Option B: Minimax via OpenRouter
+# model:
+#   default: "minimax/minimax-m2.7"
+#   provider: "openrouter"
 
 terminal:
   backend: "local"
