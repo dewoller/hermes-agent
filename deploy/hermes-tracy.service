@@ -2,6 +2,7 @@
 # ABOUTME: Secrets decrypted from SOPS at start; stored in /run/secrets/ (tmpfs).
 
 [Unit]
+RequiresMountsFor=/tank/services/active_services/hermes-agent
 Description=Hermes Agent - Tracy (containerized)
 After=network-online.target docker.service
 Wants=network-online.target
